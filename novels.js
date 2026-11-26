@@ -100,9 +100,8 @@ function renderNovels() {
 
       <a
         class="novel-card-link"
-        href="novel-detail.html?id=${encodeURIComponent(novel.id)}"
+        href="novel.html?id=${encodeURIComponent(novel.id)}"
       >
-
         ${
           novel.cover
             ? `
