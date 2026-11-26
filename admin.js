@@ -122,6 +122,73 @@ const genreContainer = document.getElementById("genreContainer");
 const novelGenre = document.getElementById("novelGenre");
 const novelStatus = document.getElementById("novelStatus");
 
+const episodeSection = document.getElementById("episodeSection");
+const episodeLinksContainer = document.getElementById("episodeLinksContainer");
+const addEpisodeBtn = document.getElementById("addEpisodeBtn");
+
+// Show episode links only for Ongoing novels
+novelStatus.addEventListener("change", () => {
+    const isOngoing = novelStatus.value === "Ongoing";
+
+    episodeSection.hidden = !isOngoing;
+
+    if (isOngoing && episodeLinksContainer.children.length === 0) {
+        addEpisodeLink();
+    }
+});
+
+// Create an episode link field
+function addEpisodeLink(title = "", link = "") {
+    const box = document.createElement("div");
+
+    box.className = "episode-link-box";
+
+    box.innerHTML = `
+        <input
+            type="text"
+            class="episode-title"
+            placeholder="Episode title (e.g. Episode 1-3)"
+        >
+
+        <input
+            type="url"
+            class="episode-url"
+            placeholder="Paste episode link"
+        >
+
+        <button type="button" class="removeEpisodeBtn">
+            Remove
+        </button>
+    `;
+
+    box.querySelector(".episode-title").value = title;
+    box.querySelector(".episode-url").value = link;
+
+    box.querySelector(".removeEpisodeBtn").addEventListener("click", () => {
+        box.remove();
+    });
+
+    episodeLinksContainer.appendChild(box);
+}
+
+// Add Link button
+addEpisodeBtn.addEventListener("click", () => {
+    addEpisodeLink();
+});
+
+// Collect episode links before saving
+function getEpisodeLinks() {
+    const boxes = document.querySelectorAll(".episode-link-box");
+
+    return Array.from(boxes)
+        .map(box => ({
+            title: box.querySelector(".episode-title").value.trim(),
+            link: box.querySelector(".episode-url").value.trim()
+        }))
+        .filter(episode => episode.title && episode.link);
+}
+
+
 const novelDescription = document.getElementById("novelDescription");
 const novelInstagram = document.getElementById("novelInstagram");
 const novelCover = document.getElementById("novelCover");
@@ -236,6 +303,28 @@ async function loadNovels() {
                 novelCover.value = data.cover || "";
                 novelLink.value = data.link || "";
 
+episodeLinksContainer.innerHTML = "";
+
+if (data.status === "Ongoing") {
+    episodeSection.hidden = false;
+
+    const savedEpisodes = Array.isArray(data.episodes)
+        ? data.episodes
+        : [];
+
+    if (savedEpisodes.length > 0) {
+        savedEpisodes.forEach(episode => {
+            addEpisodeLink(episode.title, episode.link);
+        });
+    } else {
+        addEpisodeLink();
+    }
+
+} else {
+    episodeSection.hidden = true;
+}
+
+
                 novelSubmit.textContent = "UPDATE NOVEL";
                 novelCancel.hidden = false;
 
@@ -302,7 +391,10 @@ novelForm.addEventListener("submit", async event => {
         description: novelDescription.value.trim(),
         instagram: novelInstagram.value.trim(),
         cover: novelCover.value.trim(),
-        link: novelLink.value.trim()
+        link: novelLink.value.trim(),
+        episodes: novelStatus.value === "Ongoing"
+    ? getEpisodeLinks()
+    : []
     };
 
     try {
@@ -347,7 +439,8 @@ novelCancel.addEventListener("click", resetNovelForm);
 function resetNovelForm() {
     novelForm.reset();
     novelId.value = "";
-
+episodeLinksContainer.innerHTML = "";
+episodeSection.hidden = true;
     novelSubmit.textContent = "ADD NOVEL";
     novelCancel.hidden = true;
 }
